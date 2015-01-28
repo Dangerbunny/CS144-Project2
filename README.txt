@@ -1,3 +1,5 @@
+TEAM_NAME: RC_Wonders
+
 Part B Answers
 
 1.  User(UserId, BidRating, SellRating) key = UserId

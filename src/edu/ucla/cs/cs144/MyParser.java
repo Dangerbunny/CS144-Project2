@@ -41,6 +41,26 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.ErrorHandler;
 
 
+class User{
+	
+	String uid;
+	int bRating;
+	int sRating;
+	public User(String uid){
+		this.uid = uid;
+	}
+
+	public void setbRating(int bRating) {
+		this.bRating = bRating;
+	}
+	public void setsRating(int sRating) {
+		this.sRating = sRating;
+	}
+	public String toString(){
+		 return uid+"\t" + bRating+"\t" + sRating;
+	}
+}
+
 class MyParser {
     
     static final String columnSeparator = "|*|";
@@ -180,6 +200,8 @@ class MyParser {
          * file. Use doc.getDocumentElement() to get the root Element. */
         System.out.println("Successfully parsed - " + xmlFile);
         
+        Element root = doc.getDocumentElement();
+        constructUserTable(root);
         /* Fill in code here (you will probably need to write auxiliary
             methods). */
         
@@ -189,11 +211,68 @@ class MyParser {
         
     }
     
+    public static void flushMapToDataFile(String fileName, HashMap<Object, Object> map){
+    	try {
+    	    FileWriter fos = new FileWriter(fileName);
+    	    PrintWriter dos = new PrintWriter(fos);
+    	    for (Object o : map.values()){
+    	    	
+    		    dos.print(o.toString());
+    		    dos.println();
+    	    }
+    	    dos.close();
+    	    fos.close();
+    	    } catch (IOException e) {
+    	    	System.out.println("Error Printing Tab Delimited File");
+    	    }
+    }
+    
+    public static void constructUserTable(Element root){
+    	HashMap<String, User> userMap = new HashMap<String, User>();
+    	Element[] items = getElementsByTagNameNR(root, "Item");
+    	for(Element item : items){
+    		Element seller = getElementByTagNameNR(item, "Seller");
+    		String ratingStr = seller.getAttribute("Rating");
+    		String uid = seller.getAttribute("UserID");
+    		int ratingInt = Integer.parseInt(ratingStr);
+    		if(userMap.get(uid) != null){
+    			userMap.get(uid).setsRating(ratingInt);
+    		} else {
+    			User u = new User(uid);
+    			u.setsRating(ratingInt);
+    			userMap.put(uid, u);
+    		}
+    	}
+    	for(Element item : items){
+    		Element bidList = getElementByTagNameNR(item, "Bids");
+    		Element[] bids = getElementsByTagNameNR(bidList, "Bid");
+    		for(Element bid : bids){
+    			Element bidder = getElementByTagNameNR(bid, "Bidder");
+    			String ratingStr = bidder.getAttribute("Rating");
+        		String uid = bidder.getAttribute("UserID");
+        		int ratingInt = Integer.parseInt(ratingStr);
+        		if(userMap.get(uid) != null){
+        			userMap.get(uid).setbRating(ratingInt);
+        		} else {
+        			User u = new User(uid);
+        			u.setbRating(ratingInt);
+        			userMap.put(uid, u);
+        		}
+    		}
+    	}
+    	
+    	HashMap<Object, Object> map = new HashMap<Object, Object>(userMap);
+    	flushMapToDataFile("ebay-data/user.csv", map);
+    	
+    }
+    
     public static void main (String[] args) {
-        if (args.length == 0) {
-            System.out.println("Usage: java MyParser [file] [file] ...");
-            System.exit(1);
-        }
+//        if (args.length == 0) {
+//            System.out.println("Usage: java MyParser [file] [file] ...");
+//            System.exit(1);
+//        }
+    	
+    	String testFile = "ebay-data/items-0.xml";
         
         /* Initialize parser. */
         try {
@@ -213,9 +292,9 @@ class MyParser {
         }
         
         /* Process all files listed on command line. */
-        for (int i = 0; i < args.length; i++) {
-            File currentFile = new File(args[i]);
+//        for (int i = 0; i < args.length; i++) {
+            File currentFile = new File(testFile);//args[i]);
             processFile(currentFile);
-        }
+//        }
     }
 }
