@@ -25,20 +25,30 @@
 
 package edu.ucla.cs.cs144;
 
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Vector;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
+
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.Text;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
-import org.xml.sax.ErrorHandler;
+
 
 
 class User{
@@ -61,6 +71,48 @@ class User{
 	}
 }
 
+class Bid{
+	long iid;
+	String uid;
+	String dateString;
+	double amount;
+	
+	public Bid(long iid, String uid, String dateString, double amount) {
+		super();
+		this.iid = iid;
+		this.uid = uid;
+		this.dateString = dateString;
+		this.amount = amount;
+	}
+	public String toString(){
+		 return iid+"\t" + uid+"\t" + dateString+"\t" + amount;
+	}
+}
+
+class ItemCategories{
+	
+	long iid;
+	ArrayList<String> categories;
+	
+	public ItemCategories(long iid) {
+		super();
+		this.iid = iid;
+		categories = new ArrayList<String>();
+	}
+
+	public void addCat(String category){
+		categories.add(category);
+	}
+	
+	public String toString(){
+		String data = "";
+		for(int i = 0; i < categories.size()-1; i++)
+			data += iid+"\t" + categories.get(i)+"\n";
+		data+=iid+"\t" + categories.get(categories.size()-1);
+		return data;
+	}
+	
+}
 class MyParser {
     
     static final String columnSeparator = "|*|";
@@ -201,7 +253,8 @@ class MyParser {
         System.out.println("Successfully parsed - " + xmlFile);
         
         Element root = doc.getDocumentElement();
-        constructUserTable(root);
+        constructTables(root);
+        //constructBidTable(root);
         /* Fill in code here (you will probably need to write auxiliary
             methods). */
         
@@ -217,7 +270,7 @@ class MyParser {
     	    PrintWriter dos = new PrintWriter(fos);
     	    for (Object o : map.values()){
     	    	
-    		    dos.print(o.toString());
+    		    dos.print(o);
     		    dos.println();
     	    }
     	    dos.close();
@@ -227,52 +280,122 @@ class MyParser {
     	    }
     }
     
-    public static void constructUserTable(Element root){
+    public static void flushListToDataFile(String fileName, ArrayList<Object> list){
+    	try {
+    	    FileWriter fos = new FileWriter(fileName);
+    	    PrintWriter dos = new PrintWriter(fos);
+    	    for (Object o : list){
+    	    	
+    		    dos.print(o);
+    		    dos.println();
+    	    }
+    	    dos.close();
+    	    fos.close();
+    	    } catch (IOException e) {
+    	    	System.out.println("Error Printing Tab Delimited File");
+    	    }
+    }
+    
+    /**
+     * This method is messy, but it is necessary to perform all parsing at once for efficiency reasons
+     * Splitting each table construction into it's own function is more readable, but would involve 
+     * SIGNIFICANT extra iteration over data.
+     * @param root
+     */
+    public static void constructTables(Element root){
+    	/*
+    	 * Data structures to be populated and then flushed to data files for SQL loading
+    	 */
     	HashMap<String, User> userMap = new HashMap<String, User>();
+    	ArrayList<Bid> bidList = new ArrayList<Bid>();
+    	ArrayList<ItemCategories> catList = new ArrayList<ItemCategories>();
+    	
     	Element[] items = getElementsByTagNameNR(root, "Item");
     	for(Element item : items){
     		Element seller = getElementByTagNameNR(item, "Seller");
-    		String ratingStr = seller.getAttribute("Rating");
-    		String uid = seller.getAttribute("UserID");
-    		int ratingInt = Integer.parseInt(ratingStr);
-    		if(userMap.get(uid) != null){
-    			userMap.get(uid).setsRating(ratingInt);
+    		Element allBids = getElementByTagNameNR(item, "Bids");
+    		Element[] bids = getElementsByTagNameNR(allBids, "Bid");
+    		Element[] categories = getElementsByTagNameNR(item, "Category");
+    		
+    		int sRating = Integer.parseInt(seller.getAttribute("Rating"));
+    		String sellId = seller.getAttribute("UserID");
+    		long itemId = Long.parseLong(item.getAttribute("ItemID"));
+    		
+    		//Add/Modify a User object
+    		if(userMap.get(sellId) != null){
+    			userMap.get(sellId).setsRating(sRating);
     		} else {
-    			User u = new User(uid);
-    			u.setsRating(ratingInt);
-    			userMap.put(uid, u);
+    			User u = new User(sellId);
+    			u.setsRating(sRating);
+    			userMap.put(sellId, u);
     		}
-    	}
-    	for(Element item : items){
-    		Element bidList = getElementByTagNameNR(item, "Bids");
-    		Element[] bids = getElementsByTagNameNR(bidList, "Bid");
+    		
     		for(Element bid : bids){
     			Element bidder = getElementByTagNameNR(bid, "Bidder");
-    			String ratingStr = bidder.getAttribute("Rating");
-        		String uid = bidder.getAttribute("UserID");
-        		int ratingInt = Integer.parseInt(ratingStr);
-        		if(userMap.get(uid) != null){
-        			userMap.get(uid).setbRating(ratingInt);
+    			
+    			int bRating = Integer.parseInt(bidder.getAttribute("Rating"));
+        		String buyId = bidder.getAttribute("UserID");
+        		double amount = Double.parseDouble(strip(getElementText(getElementByTagNameNR(bid, "Amount"))));
+        		String dateString = getElementText(getElementByTagNameNR(bid, "Time"));
+        		
+        		//Add a new bid
+        		bidList.add(new Bid(itemId, buyId, dateString, amount));
+        		
+        		//Add/Modify a User object
+        		if(userMap.get(buyId) != null){
+        			userMap.get(buyId).setbRating(bRating);
         		} else {
-        			User u = new User(uid);
-        			u.setbRating(ratingInt);
-        			userMap.put(uid, u);
+        			User u = new User(buyId);
+        			u.setbRating(bRating);
+        			userMap.put(buyId, u);
         		}
     		}
+    		
+    		ItemCategories iCats = new ItemCategories(itemId);
+    		
+    		for(Element category : categories){
+    			iCats.addCat(getElementText(category));
+    		}
+    		
+    		//Add a new ItemCategories object
+    		catList.add(iCats);
     	}
     	
     	HashMap<Object, Object> map = new HashMap<Object, Object>(userMap);
-    	flushMapToDataFile("ebay-data/user.csv", map);
-    	
+    	ArrayList<Object> bList = new ArrayList<Object>(bidList);
+    	ArrayList<Object> icList = new ArrayList<Object>(catList);
+    	flushMapToDataFile("user.csv", map);
+    	flushListToDataFile("bid.csv", bList);
+    	flushListToDataFile("itemcategory.csv", icList);
     }
     
+//    public static void constructBidTable(Element root){
+//    	ArrayList<Bid> bidList = new ArrayList<Bid>();
+//    	Element[] items = getElementsByTagNameNR(root, "Item");
+//    	for(Element item : items){
+//    		long itemId = Long.parseLong(item.getAttribute("ItemID"));
+//    		Element allBids = getElementByTagNameNR(item, "Bids");
+//    		Element[] bids = getElementsByTagNameNR(allBids, "Bid");
+//    		for(Element bid : bids){
+//    			String uid = getElementByTagNameNR(bid, "Bidder").getAttribute("UserID");;
+//    			double amount = Double.parseDouble(getElementText(getElementByTagNameNR(bid, "Amount")).substring(1));
+//        		String dateString = getElementText(getElementByTagNameNR(bid, "Time"));
+//        		bidList.add(new Bid(itemId, uid, dateString, amount));
+//    		}
+//    	}
+//    	
+//    	ArrayList<Object> list = new ArrayList<Object>(bidList);
+//    	flushListToDataFile("ebay-data/bid.csv", list);
+//    	
+//    }
+    
     public static void main (String[] args) {
-//        if (args.length == 0) {
-//            System.out.println("Usage: java MyParser [file] [file] ...");
-//            System.exit(1);
-//        }
+        if (args.length == 0) {
+            System.out.println("Usage: java MyParser [file] [file] ...");
+            System.exit(1);
+        }
     	
-    	String testFile = "ebay-data/items-0.xml";
+    	//String testFile = "ebay-data/items-0.xml";
         
         /* Initialize parser. */
         try {
@@ -292,9 +415,9 @@ class MyParser {
         }
         
         /* Process all files listed on command line. */
-//        for (int i = 0; i < args.length; i++) {
-            File currentFile = new File(testFile);//args[i]);
+        for (int i = 0; i < args.length; i++) {
+            File currentFile = new File(args[i]);
             processFile(currentFile);
-//        }
+        }
     }
 }
