@@ -538,7 +538,9 @@ class MyParser {
     			itemMap.get(itemId).setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
     			itemMap.get(itemId).setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
     			itemMap.get(itemId).setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
-    			itemMap.get(itemId).setdesc(truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength));
+    			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
+    			desc.replaceAll("\"", "\\\"");
+    			itemMap.get(itemId).setdesc(desc);
     		}
     		else {
     			Item i = new Item(itemId);
@@ -551,7 +553,9 @@ class MyParser {
     			i.setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
     			i.setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
     			i.setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
-    			i.setdesc(truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength));
+    			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
+    			desc.replaceAll("\"", "\\\"");
+    			i.setdesc(desc);
     			itemMap.put(itemId, i);
     		}
     	}

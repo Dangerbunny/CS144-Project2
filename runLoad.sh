@@ -9,7 +9,7 @@ mysql CS144 < create.sql
 
 # Compile and run the parser to generate the appropriate load files
 ant
-ant run-all
+ant run
 # ...
 
 # If the Java code does not handle duplicate removal, do this now
