@@ -419,7 +419,7 @@ class MyParser {
     
     public static void flushMapToDataFile(String fileName, HashMap<Object, Object> map){
     	try {
-    	    FileWriter fos = new FileWriter(fileName);
+    	    FileWriter fos = new FileWriter(fileName, true);
     	    PrintWriter dos = new PrintWriter(fos);
     	    for (Object o : map.values()){
     	    	
@@ -435,7 +435,7 @@ class MyParser {
     
     public static void flushListToDataFile(String fileName, ArrayList<Object> list){
     	try {
-    	    FileWriter fos = new FileWriter(fileName);
+    	    FileWriter fos = new FileWriter(fileName, true);
     	    PrintWriter dos = new PrintWriter(fos);
     	    for (Object o : list){
     	    	
@@ -670,12 +670,12 @@ class MyParser {
     
     
     public static void main (String[] args) {
-//        if (args.length == 0) {
-//            System.out.println("Usage: java MyParser [file] [file] ...");
-//            System.exit(1);
-//        }
-//    	
-    	String testFile = "ebay-data/items-0.xml";
+        if (args.length == 0) {
+            System.out.println("Usage: java MyParser [file] [file] ...");
+            System.exit(1);
+        }
+    	
+//    	String testFile = "ebay-data/items-0.xml";
         
         /* Initialize parser. */
         try {
@@ -694,9 +694,9 @@ class MyParser {
             System.exit(2);
         }
         
-//        for (int i = 0; i < args.length; i++) {
-            File currentFile = new File(testFile);//args[i]);
+        for (int i = 0; i < args.length; i++) {
+            File currentFile = new File(args[i]);
             processFile(currentFile);
-//        }
+        }
     }
 }

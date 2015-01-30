@@ -8,7 +8,7 @@ create table Bid(
     time timestamp, 
     amount double(16,2));
 create table ItemCategory(
-    itemId bigint, 
+    ItemId bigint, 
     category varchar(255)); 
 create table Item(
     ItemId bigint primary key, 
