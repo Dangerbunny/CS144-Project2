@@ -113,10 +113,160 @@ class ItemCategories{
 	}
 	
 }
+
+class Item{
+	
+	long itemId;
+	String name;
+	double currBid;
+	double buyout;
+	double minBid;
+	int numBids;
+	String startTime;
+	String endTime;
+	String sid;
+	String desc;
+	
+	public Item(long itemId){
+		this.itemId = itemId;
+	}
+	public void setname(String name) {
+		this.name = name;
+	}
+	public void setcurrBid(double currBid) {
+		this.currBid = currBid;
+	}
+	public void setbuyout(double d) {
+		this.buyout = d;
+	}
+	public void setminBid(double d) {
+		this.minBid = d;
+	}
+	public void setnumBids(int numBids) {
+		this.numBids = numBids;
+	}
+	public void setstartTime(String startTime) {
+		this.startTime = startTime;
+	}
+	public void setendTime(String endTime) {
+		this.endTime = endTime;
+	}
+	public void setsid(String sid) {
+		this.sid = sid;
+	}
+	public void setdesc(String desc) {
+		this.desc = desc;
+	}
+	public String toString(){
+		 return itemId +"\t"+ name +"\t"+ currBid +"\t" 
+				 + buyout +"\t"+ minBid +"\t"+ numBids +"\t" 
+				 + startTime +"\t"+ endTime +"\t"+ sid +"\t" 
+				 + desc;
+	}
+}
+
+class BidLocation{
+	String uid;
+	int locId;
+	
+	public BidLocation(String uid){
+		this.uid = uid;
+	}
+	public void setlocId(int locId) {
+		this.locId = locId;
+	}
+	public String toString(){
+		 return uid +"\t"+ locId;
+	}
+}
+
+class ItemLocation{
+	long itemId;
+	int locId;
+	
+	public ItemLocation(long itemId){
+		this.itemId = itemId;
+	}
+	public void setlocId(int locId) {
+		this.locId = locId;
+	}
+	public String toString(){
+		 return itemId +"\t"+ locId;
+	}
+}
+
+class Location{
+	
+	int locId;
+	float lat;
+	float lon;
+	String text;
+	String country;
+	
+	public Location(int locId){
+		this.locId = locId;
+	}
+	public void setlat(float lat) {
+		this.lat = lat;
+	}
+	public void setlon(float lon) {
+		this.lon = lon;
+	}
+	public void settext(String text) {
+		this.text = text;
+	}
+	public void setcountry(String country) {
+		this.country = country;
+	}
+	public String toString(){
+		String latStr;
+		String lonStr;
+		if(lat == -1000)
+			latStr = "\\N";
+		else
+			latStr = String.valueOf(lat);
+		if(lon == -1000)
+			lonStr = "\\N";
+		else
+			lonStr = String.valueOf(lon);
+		return locId +"\t"+ latStr +"\t"+ lonStr +"\t"+ text +"\t"+ country;
+	}
+}
+
+class TempLocation{
+	
+	String text;
+	int locId;
+	float lat;
+	float lon;
+	
+	public TempLocation(String text, int locId){
+		this.text = text;
+		this.locId = locId;
+	}
+	public void setlat(float lat) {
+		this.lat = lat;
+	}
+	public float getlat(){
+		return this.lat;
+	}
+	public void setlon(float lon) {
+		this.lon = lon;
+	}
+	public float getlon(){
+		return this.lon;
+	}
+	public int getlocId(){
+		return this.locId;
+	}
+}
+
 class MyParser {
     
     static final String columnSeparator = "|*|";
     static DocumentBuilder builder;
+    
+    static int locIdCounter = 0;
     
     static final String[] typeName = {
 	"none",
@@ -133,6 +283,7 @@ class MyParser {
 	"DocFragment",
 	"Notation",
     };
+	private static final int maxDescLength = 4000;
     
     static class MyErrorHandler implements ErrorHandler {
         
@@ -254,6 +405,8 @@ class MyParser {
         
         Element root = doc.getDocumentElement();
         constructTables(root);
+        constructItemTable(root);
+        constructLocationTables(root);
         //constructBidTable(root);
         /* Fill in code here (you will probably need to write auxiliary
             methods). */
@@ -369,33 +522,156 @@ class MyParser {
     	flushListToDataFile("itemcategory.csv", icList);
     }
     
-//    public static void constructBidTable(Element root){
-//    	ArrayList<Bid> bidList = new ArrayList<Bid>();
-//    	Element[] items = getElementsByTagNameNR(root, "Item");
-//    	for(Element item : items){
-//    		long itemId = Long.parseLong(item.getAttribute("ItemID"));
-//    		Element allBids = getElementByTagNameNR(item, "Bids");
-//    		Element[] bids = getElementsByTagNameNR(allBids, "Bid");
-//    		for(Element bid : bids){
-//    			String uid = getElementByTagNameNR(bid, "Bidder").getAttribute("UserID");;
-//    			double amount = Double.parseDouble(getElementText(getElementByTagNameNR(bid, "Amount")).substring(1));
-//        		String dateString = getElementText(getElementByTagNameNR(bid, "Time"));
-//        		bidList.add(new Bid(itemId, uid, dateString, amount));
-//    		}
-//    	}
-//    	
-//    	ArrayList<Object> list = new ArrayList<Object>(bidList);
-//    	flushListToDataFile("ebay-data/bid.csv", list);
-//    	
-//    }
+    public static void constructItemTable(Element root){
+    	HashMap<Long, Item> itemMap = new HashMap<Long, Item>();
+    	Element[] items = getElementsByTagNameNR(root, "Item");
+    	for( Element item : items){
+    		String itemIdStr = item.getAttribute("ItemID");
+    		long itemId = Integer.parseInt(itemIdStr);
+    		if(itemMap.get(itemId) != null){				//to be safe...but do we need this?  I think I remember a Piazza post saying every Item listing is unique
+    			itemMap.get(itemId).setname(getElementText(getElementByTagNameNR(item, "Name")));
+    			itemMap.get(itemId).setcurrBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "Currently")))));
+    			if(getElementByTagNameNR(item, "Buy_Price") != null)
+    				itemMap.get(itemId).setbuyout(Double.parseDouble(strip((getElementText(getElementByTagNameNR(item, "Buy_Price"))))));
+    			itemMap.get(itemId).setminBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "First_Bid")))));
+    			itemMap.get(itemId).setnumBids(Integer.parseInt(getElementText(getElementByTagNameNR(item, "Number_of_Bids"))));
+    			itemMap.get(itemId).setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
+    			itemMap.get(itemId).setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
+    			itemMap.get(itemId).setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
+    			itemMap.get(itemId).setdesc(truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength));
+    		}
+    		else {
+    			Item i = new Item(itemId);
+    			i.setname(getElementText(getElementByTagNameNR(item, "Name")));
+    			i.setcurrBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "Currently")))));
+    			if(getElementByTagNameNR(item, "Buy_Price") != null)
+    				i.setbuyout(Double.parseDouble(strip((getElementText(getElementByTagNameNR(item, "Buy_Price"))))));
+    			i.setminBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "First_Bid")))));
+    			i.setnumBids(Integer.parseInt(getElementText(getElementByTagNameNR(item, "Number_of_Bids"))));
+    			i.setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
+    			i.setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
+    			i.setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
+    			i.setdesc(truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength));
+    			itemMap.put(itemId, i);
+    		}
+    	}
+    	HashMap<Object, Object> map = new HashMap<Object, Object>(itemMap);
+    	flushMapToDataFile("item.csv", map);
+    }
+    
+    public static void constructLocationTables(Element root){
+    	HashMap<String, BidLocation> bidLocMap = new HashMap<String, BidLocation>();
+    	HashMap<Long, ItemLocation> itemLocMap = new HashMap<Long, ItemLocation>();
+    	HashMap<Integer, Location> locMap = new HashMap<Integer, Location>();
+    	HashMap<String, TempLocation> tempLocMap = new HashMap<String, TempLocation>();
+    	
+    	int locId  = 0;
+    	Element[] items = getElementsByTagNameNR(root, "Item");
+    	for(Element item : items){
+    		//Item location data
+    		Element location = getElementByTagNameNR(item, "Location");
+    		String locText = location.getTextContent();
+    		//Get Latitude and Longitude
+    		String latStr = location.getAttribute("Latitude");
+    		float lat = -1000, lon= -1000;
+    		if(latStr.length() != 0)
+    			lat = Float.parseFloat(latStr);
+    		String lonStr = location.getAttribute("Longitude");
+    		if(lonStr.length() != 0)
+    			lon = Float.parseFloat(lonStr);
+    		//Get Country
+    		Element country = getElementByTagNameNR(item, "Country");
+    		String countryStr = country.getTextContent();
+    		//Get ItemID
+    		String itemIdStr = item.getAttribute("ItemID");
+    		long itemId = Long.parseLong(itemIdStr);
+    		
+    		//Temp stuff to keep track of locIds
+    		String tempLocText = locText+latStr+lonStr;
+    		if(tempLocMap.get(tempLocText) == null){
+    			locId = getNextLocId();
+    			TempLocation tl = new TempLocation(tempLocText,locId);
+    			tempLocMap.put(tempLocText, tl);
+    		}else{
+    			TempLocation tl2 = tempLocMap.get(tempLocText);
+    			locId = tl2.getlocId();
+    		}
+			
+			//Item Location Add
+			if(itemLocMap.get(itemId) == null){
+				ItemLocation il = new ItemLocation(itemId);
+				il.setlocId(locId);
+				itemLocMap.put(itemId,il);
+			}
+			//Location Add
+			if(locMap.get(locId) == null){
+				Location loc = new Location(locId);
+				loc.setlat(lat);
+				loc.setlon(lon);
+				loc.settext(locText);
+				loc.setcountry(countryStr);
+				locMap.put(locId,loc);
+			}
+    		
+    		//Bidder location data
+    		Element bidList = getElementByTagNameNR(item, "Bids");
+    		Element[] bids = getElementsByTagNameNR(bidList, "Bid");
+    		for(Element bid : bids){
+    			Element bidder = getElementByTagNameNR(bid, "Bidder");
+    			Element bidderLocation = getElementByTagNameNR(bidder,"Location");
+    			if(bidderLocation != null){
+	        		String uid = bidder.getAttribute("UserID");
+	        		
+	        		String bidLocText = bidderLocation.getTextContent();
+	        		String bidLatStr = bidderLocation.getAttribute("Latitude");
+	        		String bidLonStr = bidderLocation.getAttribute("Longitude");
+	        		
+	        		String tempBidLocText = bidLocText+bidLatStr+bidLonStr;
+	        		if(tempLocMap.get(tempBidLocText) == null){
+	        			locId = getNextLocId();
+	        			TempLocation btl = new TempLocation(tempBidLocText,locId);
+	        			tempLocMap.put(tempBidLocText, btl);
+	        		}else{
+	        			TempLocation btl2 = tempLocMap.get(tempBidLocText);
+	        			locId = btl2.getlocId();
+	        		}
+	        		//BidLocation Add
+	        		if(bidLocMap.get(uid) == null){
+	        			BidLocation bl = new BidLocation(uid);
+	        			bl.setlocId(locId);
+	        			bidLocMap.put(uid, bl);
+	        		}
+    			}
+    		}
+    	}
+    	HashMap<Object, Object> map1 = new HashMap<Object, Object>(bidLocMap);
+    	flushMapToDataFile("bidlocation.csv", map1);
+    	HashMap<Object, Object> map2 = new HashMap<Object, Object>(itemLocMap);
+    	flushMapToDataFile("itemlocation.csv", map2);
+    	HashMap<Object, Object> map3 = new HashMap<Object, Object>(locMap);
+    	flushMapToDataFile("location.csv", map3);
+    }
+    
+    public static int getNextLocId(){
+    	locIdCounter = locIdCounter + 1;
+    	return locIdCounter;
+    }
+    
+    public static String truncate(String value, int length)
+    {
+      if (value != null && value.length() > length)
+        value = value.substring(0, length);
+      return value;
+    }
+    
     
     public static void main (String[] args) {
-        if (args.length == 0) {
-            System.out.println("Usage: java MyParser [file] [file] ...");
-            System.exit(1);
-        }
-    	
-    	//String testFile = "ebay-data/items-0.xml";
+////        if (args.length == 0) {
+////            System.out.println("Usage: java MyParser [file] [file] ...");
+////            System.exit(1);
+////        }
+////    	
+//    	String testFile = "ebay-data/items-0.xml";
         
         /* Initialize parser. */
         try {
@@ -414,7 +690,6 @@ class MyParser {
             System.exit(2);
         }
         
-        /* Process all files listed on command line. */
         for (int i = 0; i < args.length; i++) {
             File currentFile = new File(args[i]);
             processFile(currentFile);

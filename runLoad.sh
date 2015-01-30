@@ -13,10 +13,10 @@ ant run-all
 # ...
 
 # If the Java code does not handle duplicate removal, do this now
-sort *.csv
+
 
 # Run the load.sql batch file to load the data
 mysql CS144 < load.sql
 
 # Remove all temporary files
-#rm *.csv
+rm *.csv
