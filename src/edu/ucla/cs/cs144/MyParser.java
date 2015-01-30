@@ -539,7 +539,7 @@ class MyParser {
     			itemMap.get(itemId).setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
     			itemMap.get(itemId).setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
     			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
-    			desc.replaceAll("\"", "\\\"");
+    			desc = desc.replace("\"", "\\\"");
     			itemMap.get(itemId).setdesc(desc);
     		}
     		else {
@@ -554,7 +554,7 @@ class MyParser {
     			i.setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
     			i.setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
     			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
-    			desc.replaceAll("\"", "\\\"");
+    			desc = desc.replace("\"", "\\\"");
     			i.setdesc(desc);
     			itemMap.put(itemId, i);
     		}
@@ -670,12 +670,12 @@ class MyParser {
     
     
     public static void main (String[] args) {
-////        if (args.length == 0) {
-////            System.out.println("Usage: java MyParser [file] [file] ...");
-////            System.exit(1);
-////        }
-////    	
-//    	String testFile = "ebay-data/items-0.xml";
+//        if (args.length == 0) {
+//            System.out.println("Usage: java MyParser [file] [file] ...");
+//            System.exit(1);
+//        }
+//    	
+    	String testFile = "ebay-data/items-0.xml";
         
         /* Initialize parser. */
         try {
@@ -694,9 +694,9 @@ class MyParser {
             System.exit(2);
         }
         
-        for (int i = 0; i < args.length; i++) {
-            File currentFile = new File(args[i]);
+//        for (int i = 0; i < args.length; i++) {
+            File currentFile = new File(testFile);//args[i]);
             processFile(currentFile);
-        }
+//        }
     }
 }
