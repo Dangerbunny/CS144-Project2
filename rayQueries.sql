@@ -20,7 +20,15 @@ from (
 	having count(ic.ItemId) = 4
 ) foo;
 
-/*Query 4
+/*Query 4*/
+select ItemId
+from Item i
+where i.numBids > 0 and 'Dec-20-01 00:00:01' BETWEEN i.endTime and i.startTime and i.currentBid >= ALL(
+	select currentBid 
+	from Item
+	where numBids > 0 and 'Dec-20-01 00:00:01' BETWEEN i.endTime and i.startTime
+);
+
 
 /*Query 5*/
 /*select count(*)
@@ -45,18 +53,12 @@ from (
 
 /*Query 7*/
 
-/*select count(*)
-from(
-	select category, currentBid
-	from ItemCategory ic, Item i
-	where ic.ItemId = i.ItemId and i.currentBid > 100
-	group by ic.category
-) foo;*/
-
-/*select count(*)
+/*select count(*)*/
+select count(*)
 from (
 	select count(*)
 	from ItemCategory ic, Bid b
 	where ic.ItemId = b.ItemId
+	and b.amount>100
 	group by ic.category
-)
+) foo;
