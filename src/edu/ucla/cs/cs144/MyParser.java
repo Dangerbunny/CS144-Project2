@@ -267,6 +267,9 @@ class MyParser {
     static DocumentBuilder builder;
     
     static int locIdCounter = 0;
+
+    static HashMap<String, User> userMap = new HashMap<String, User>();
+
     
     static final String[] typeName = {
 	"none",
@@ -459,7 +462,6 @@ class MyParser {
     	/*
     	 * Data structures to be populated and then flushed to data files for SQL loading
     	 */
-    	HashMap<String, User> userMap = new HashMap<String, User>();
     	ArrayList<Bid> bidList = new ArrayList<Bid>();
     	ArrayList<ItemCategories> catList = new ArrayList<ItemCategories>();
     	
@@ -514,10 +516,10 @@ class MyParser {
     		catList.add(iCats);
     	}
     	
-    	HashMap<Object, Object> map = new HashMap<Object, Object>(userMap);
+    	
     	ArrayList<Object> bList = new ArrayList<Object>(bidList);
     	ArrayList<Object> icList = new ArrayList<Object>(catList);
-    	flushMapToDataFile("user.csv", map);
+    	
     	flushListToDataFile("bid.csv", bList);
     	flushListToDataFile("itemcategory.csv", icList);
     }
@@ -698,5 +700,8 @@ class MyParser {
             File currentFile = new File(args[i]);
             processFile(currentFile);
         }
+
+        HashMap<Object, Object> map = new HashMap<Object, Object>(userMap);
+        flushMapToDataFile("user.csv", map);
     }
 }

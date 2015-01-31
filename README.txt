@@ -4,8 +4,7 @@ Part B Answers
 
 1.  User(UserId, BidRating, SellRating) key = UserId
     Bid(ItemId, UserId, time, amount)
-    //Category(catId, text) keys = catId, text
-    ItemCategory(itemId, category) //ItemCategory(catId, ItemId)
+    ItemCategory(ItemId, category)
     Item(ItemId, name, currentBid, buyout, minBid, numBids, startTime, endTime, sellId, description) key = ItemId
     BidLocation(UserId, LocId) key = UserId
     ItemLocation(ItemId, LocId) key = ItemId
