@@ -28,25 +28,25 @@ ant run-all
 # echo "Checking for duplicates, location..."
 # uniq -d location.csv
 echo "Eliminating duplicates, just to be safe..."
-sort user.csv | uniq > tempUser.csv
+cat user.csv | uniq > tempUser.csv
 cat tempUser.csv > user.csv
 
-sort bid.csv | uniq > tempBid.csv
+cat bid.csv | uniq > tempBid.csv
 cat tempBid.csv > bid.csv
 
-sort itemcategory.csv | uniq > tempICat.csv
+cat itemcategory.csv | uniq > tempICat.csv
 cat tempICat.csv > itemcategory.csv
 
-sort item.csv | uniq > tempItem.csv
+cat item.csv | uniq > tempItem.csv
 cat tempItem.csv > item.csv
 
-sort bidlocation.csv | uniq > tempBidLoc.csv
+cat bidlocation.csv | uniq > tempBidLoc.csv
 cat tempBidLoc.csv > bidlocation.csv
 
-sort itemlocation.csv | uniq > tempILoc.csv
+cat itemlocation.csv | uniq > tempILoc.csv
 cat tempILoc.csv > itemlocation.csv
 
-sort location.csv | uniq > tempLoc.csv
+cat location.csv | uniq > tempLoc.csv
 cat tempLoc.csv > location.csv
 
 # echo "Checking for duplicates, user..."
