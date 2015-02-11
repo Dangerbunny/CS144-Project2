@@ -31,7 +31,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Vector;
@@ -269,6 +271,12 @@ class MyParser {
     static int locIdCounter = 0;
 
     static HashMap<String, User> userMap = new HashMap<String, User>();
+    
+    static SimpleDateFormat inFormatter =
+            new SimpleDateFormat("MMM-dd-yy HH:mm:ss");
+    static SimpleDateFormat outFormatter = 
+    		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
     
     static final String[] typeName = {
@@ -491,7 +499,18 @@ class MyParser {
     			int bRating = Integer.parseInt(bidder.getAttribute("Rating"));
         		String buyId = bidder.getAttribute("UserID");
         		double amount = Double.parseDouble(strip(getElementText(getElementByTagNameNR(bid, "Amount"))));
-        		String dateString = getElementText(getElementByTagNameNR(bid, "Time"));
+        		
+        		Date bidDate = null;
+        		String dateString = null;
+				try {
+					bidDate = inFormatter.parse(getElementText(getElementByTagNameNR(bid, "Time")));
+					dateString = outFormatter.format(bidDate);
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        		
+        		
         		
         		//Add a new bid
         		bidList.add(new Bid(itemId, buyId, dateString, amount));
@@ -537,8 +556,23 @@ class MyParser {
     				itemMap.get(itemId).setbuyout(Double.parseDouble(strip((getElementText(getElementByTagNameNR(item, "Buy_Price"))))));
     			itemMap.get(itemId).setminBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "First_Bid")))));
     			itemMap.get(itemId).setnumBids(Integer.parseInt(getElementText(getElementByTagNameNR(item, "Number_of_Bids"))));
-    			itemMap.get(itemId).setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
-    			itemMap.get(itemId).setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
+    			
+    			Date startD = null, endD = null;
+    			String sdString = null, edString = null;
+				try {
+					startD = inFormatter.parse(getElementText((getElementByTagNameNR(item, "Started"))));
+					endD = inFormatter.parse(getElementText(getElementByTagNameNR(item, "Ends")));
+					sdString = outFormatter.format(startD);
+					edString = outFormatter.format(endD);
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    			
+    			
+    			itemMap.get(itemId).setstartTime(sdString);
+    			itemMap.get(itemId).setendTime(edString);
+    			
     			itemMap.get(itemId).setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
     			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
     			desc = desc.replace("\"", "\\\"");
@@ -552,8 +586,23 @@ class MyParser {
     				i.setbuyout(Double.parseDouble(strip((getElementText(getElementByTagNameNR(item, "Buy_Price"))))));
     			i.setminBid(Double.parseDouble(strip(getElementText(getElementByTagNameNR(item, "First_Bid")))));
     			i.setnumBids(Integer.parseInt(getElementText(getElementByTagNameNR(item, "Number_of_Bids"))));
-    			i.setstartTime(getElementText((getElementByTagNameNR(item, "Started"))));
-    			i.setendTime(getElementText(getElementByTagNameNR(item, "Ends")));
+
+    			Date startD = null, endD = null;
+    			String sdString = null, edString = null;
+				try {
+					startD = inFormatter.parse(getElementText((getElementByTagNameNR(item, "Started"))));
+					endD = inFormatter.parse(getElementText(getElementByTagNameNR(item, "Ends")));
+					sdString = outFormatter.format(startD);
+					edString = outFormatter.format(endD);
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    			
+    			
+    			i.setstartTime(sdString);
+    			i.setendTime(edString);
+    			
     			i.setsid(getElementByTagNameNR(item, "Seller").getAttribute("UserID"));
     			String desc = truncate(getElementText(getElementByTagNameNR(item, "Description")), maxDescLength);
     			desc = desc.replace("\"", "\\\"");
