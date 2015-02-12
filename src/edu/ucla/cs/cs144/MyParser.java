@@ -674,12 +674,23 @@ class MyParser {
     		for(Element bid : bids){
     			Element bidder = getElementByTagNameNR(bid, "Bidder");
     			Element bidderLocation = getElementByTagNameNR(bidder,"Location");
+    			Element bidderCountry = getElementByTagNameNR(bidder,"Country");
     			if(bidderLocation != null){
 	        		String uid = bidder.getAttribute("UserID");
 	        		
 	        		String bidLocText = bidderLocation.getTextContent();
+	        		String bidCountryStr = null;
+	        		if(bidderCountry != null)
+	        			bidCountryStr = bidderCountry.getTextContent();
 	        		String bidLatStr = bidderLocation.getAttribute("Latitude");
 	        		String bidLonStr = bidderLocation.getAttribute("Longitude");
+	        		
+	        		float bidLon = -1000, bidLat = -1000;
+	        		
+	        		if(bidLatStr.length() != 0)
+	        			bidLat = Float.parseFloat(latStr);
+	        		if(bidLonStr.length() != 0)
+	        			bidLon = Float.parseFloat(lonStr);
 	        		
 	        		String tempBidLocText = bidLocText+bidLatStr+bidLonStr;
 	        		if(tempLocMap.get(tempBidLocText) == null){
@@ -696,6 +707,15 @@ class MyParser {
 	        			bl.setlocId(locId);
 	        			bidLocMap.put(uid, bl);
 	        		}
+	        		//Location Add
+	        		if(locMap.get(locId) == null){
+	    				Location bidLoc = new Location(locId);
+	    				bidLoc.setlat(bidLat);
+	    				bidLoc.setlon(bidLon);
+	    				bidLoc.settext(bidLocText);
+	    				bidLoc.setcountry(bidCountryStr);
+	    				locMap.put(locId,bidLoc);
+	        		}
     			}
     		}
     	}
@@ -705,6 +725,7 @@ class MyParser {
     	flushMapToDataFile("itemlocation.csv", map2);
     	HashMap<Object, Object> map3 = new HashMap<Object, Object>(locMap);
     	flushMapToDataFile("location.csv", map3);
+    	
     }
     
     public static int getNextLocId(){
