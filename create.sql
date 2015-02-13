@@ -29,7 +29,7 @@ create table ItemLocation(
     LocId int);
 create table Location(
     LocId int primary key, 
-    lat float(10,8), 
-    lon float(10,8), 
+    lat real, 
+    lon real, 
     locText varchar(255), 
     country varchar(255));
